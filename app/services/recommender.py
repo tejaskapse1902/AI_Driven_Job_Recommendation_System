@@ -4,9 +4,17 @@ import faiss
 from sentence_transformers import SentenceTransformer
 from app.core.config import DATA_DIR
 from app.services.resume_parser import parse_resume
+from app.core.database import jobs_collection
+
 
 # Load data
-df = pd.read_csv(f"{DATA_DIR}/jobs.csv", encoding="latin1")
+# df = pd.read_csv(f"{DATA_DIR}/jobs.csv", encoding="latin1")
+def load_jobs_from_mongodb():
+    jobs = list(jobs_collection.find({}, {"_id": 0}))
+    return pd.DataFrame(jobs)
+
+df = load_jobs_from_mongodb()
+
 df["Job Description"] = df["Job Description"].fillna("").astype(str)
 
 index = faiss.read_index(f"{DATA_DIR}/jobs.index")
@@ -39,7 +47,7 @@ def recommend_jobs(resume_text: str):
 
     ranked = []
     for rank, idx in enumerate(indices[0]):
-        row = df.iloc[idx]
+        row = df.iloc[idx]  
         sim = scores[0][rank]
         score = final_score(sim, row, resume_data)
         ranked.append((score, idx))

@@ -1,20 +1,16 @@
-import os
 import numpy as np
 import pandas as pd
 import faiss
+from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
 
-# -------- CONFIG --------
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-
-JOBS_CSV = os.path.join(DATA_DIR, "jobs.csv")
-FAISS_INDEX_PATH = os.path.join(DATA_DIR, "jobs.index")
-
+# ===== CONFIG =====
+MONGO_URI = "mongodb+srv://tejaskapse19_db_user:BEsS1fFSuSLWZLCM@cluster0.yknizjc.mongodb.net/?appName=Cluster0"
+DB_NAME = "job_recommendation"
+COLLECTION_NAME = "jobs"
+OUTPUT_INDEX = "jobs.index"
 MODEL_NAME = "BAAI/bge-large-en-v1.5"
-BATCH_SIZE = 32
-# ------------------------
-
+# ==================
 
 def build_job_text(row):
     return f"""
@@ -27,38 +23,33 @@ Responsibilities: {row.get('Responsibilities', '')}
 Job Description: {row.get('Job Description', '')}
 """
 
-
 def main():
-    print("📥 Loading jobs.csv...")
-    df = pd.read_csv(JOBS_CSV, encoding="latin1")
-    print(f"Jobs loaded: {len(df)}")
+    print("Connecting to MongoDB...")
+    client = MongoClient(MONGO_URI)
+    db = client[DB_NAME]
+    collection = db[COLLECTION_NAME]
 
-    print("🧱 Building job texts...")
+    jobs = list(collection.find({}, {"_id": 0}))
+    df = pd.DataFrame(jobs)
+
+    print("Building job texts...")
     job_texts = df.apply(build_job_text, axis=1).tolist()
 
-    print("🤖 Loading embedding model...")
+    print("Loading model...")
     model = SentenceTransformer(MODEL_NAME)
 
-    print("⚙️ Generating embeddings...")
-    embeddings = model.encode(
-        job_texts,
-        batch_size=BATCH_SIZE,
-        normalize_embeddings=True,
-        show_progress_bar=True
-    )
+    print("Generating embeddings...")
+    embeddings = model.encode(job_texts, batch_size=32, normalize_embeddings=True, show_progress_bar=True)
 
+    print("Creating FAISS index...")
     dim = embeddings.shape[1]
-
-    print("🧠 Creating FAISS index...")
     index = faiss.IndexFlatIP(dim)
     index.add(np.array(embeddings))
 
-    print("💾 Saving FAISS index...")
-    faiss.write_index(index, FAISS_INDEX_PATH)
+    print("Saving index...")
+    faiss.write_index(index, OUTPUT_INDEX)
 
-    print("✅ Done!")
-    print("Index saved to:", FAISS_INDEX_PATH)
-
+    print("Index created successfully.")
 
 if __name__ == "__main__":
     main()

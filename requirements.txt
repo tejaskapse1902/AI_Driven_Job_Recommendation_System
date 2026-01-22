@@ -9,3 +9,11 @@ spacy
 nltk
 phonenumbers
 tqdm
+python-multipart
+boto3
+uuid
+sentence_transformers
+pydantic
+dotenv
+pandas
+pymongo
