@@ -1,12 +1,16 @@
+import os
 import numpy as np
 import pandas as pd
 import faiss
 from app.core.config import DATA_DIR
 from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
+import dotenv
+
+dotenv.load_dotenv()
 
 # ===== CONFIG =====
-MONGO_URI = "mongodb+srv://tejaskapse19_db_user:BEsS1fFSuSLWZLCM@cluster0.yknizjc.mongodb.net/?appName=Cluster0"
+MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "job_recommendation"
 COLLECTION_NAME = "jobs"
 OUTPUT_INDEX = f"{DATA_DIR}/jobs.index"
