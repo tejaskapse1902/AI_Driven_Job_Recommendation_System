@@ -1,9 +1,15 @@
-import boto3
+import sys
 import os
 import dotenv
-from app.core.config import DATA_DIR
 
-dotenv.load_dotenv()
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, PROJECT_ROOT)
+
+ENV_PATH = os.path.join(PROJECT_ROOT, "app", ".env")
+dotenv.load_dotenv(ENV_PATH)
+
+import boto3
+from app.core.config import DATA_DIR
 
 # ---------- CONFIG ----------
 BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")

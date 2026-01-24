@@ -1,24 +1,10 @@
 import numpy as np
 import pandas as pd
-import faiss
 from sentence_transformers import SentenceTransformer
-from app.core.config import DATA_DIR
 from app.services.resume_parser import parse_resume
-from app.core.database import jobs_collection
+from app.services.index_manager import get_index, get_jobs_df
 
-
-# Load data
-# df = pd.read_csv(f"{DATA_DIR}/jobs.csv", encoding="latin1")
-def load_jobs_from_mongodb():
-    jobs = list(jobs_collection.find({}, {"_id": 0}))
-    return pd.DataFrame(jobs)
-
-df = load_jobs_from_mongodb()
-
-df["Job Description"] = df["Job Description"].fillna("").astype(str)
-
-index = faiss.read_index(f"{DATA_DIR}/jobs.index")
-
+# ---------- Load model once ----------
 model = SentenceTransformer("BAAI/bge-large-en-v1.5")
 
 TOP_K = 50
@@ -39,33 +25,45 @@ def final_score(similarity, row, resume_data):
 
 
 def recommend_jobs(resume_text: str):
+    # ✅ Always fetch latest index + jobs
+    index = get_index()
+    df = get_jobs_df()
+
+    if index is None or df is None or df.empty:
+        return {
+            "error": "Recommendation system is warming up. Please try again in a few seconds."
+        }
+
     resume_data = parse_resume(resume_text)
 
     emb = model.encode([resume_text], normalize_embeddings=True)
     scores, indices = index.search(np.array(emb), TOP_K)
 
-
     ranked = []
     for rank, idx in enumerate(indices[0]):
-        row = df.iloc[idx]  
-        sim = scores[0][rank]
+        if idx >= len(df):   # safety check (important for incremental index)
+            continue
+
+        row = df.iloc[idx]
+        sim = float(scores[0][rank])
         score = final_score(sim, row, resume_data)
         ranked.append((score, idx))
 
     ranked.sort(reverse=True)
 
     results = []
-    for score, idx in ranked:
+    for score, idx in ranked[:TOP_K]:
         job = df.iloc[idx]
+
         results.append({
             "job_title": str(job.get("Job Title", "")),
             "company": str(job.get("Company Name", "")),
             "location": str(job.get("Location", "")),
             "experience": str(job.get("Experience Level", "")),
             "skills": str(job.get("Skills", "")),
-            "salary_min": job.get("Salary Min (?)", 0) if pd.notna(job.get("Salary Min (?)")) else 0,
-            "salary_max": job.get("Salary Max (?)", 0) if pd.notna(job.get("Salary Max (?)")) else 0,
-            "match_percentage": float(round(min(float(score) * 100, 100), 2))
+            "salary_min": str(job.get("Salary Min (?)")),
+            "salary_max": str(job.get("Salary Max (?)")),
+            "match_percentage": round(min(score * 100, 100), 2)
         })
 
     return results

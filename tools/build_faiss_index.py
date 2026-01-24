@@ -1,11 +1,19 @@
+import sys
 import os
+import dotenv
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, PROJECT_ROOT)
+
+ENV_PATH = os.path.join(PROJECT_ROOT, "app", ".env")
+dotenv.load_dotenv(ENV_PATH)
+
 import numpy as np
 import pandas as pd
 import faiss
 from app.core.config import DATA_DIR
 from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
-import dotenv
 
 dotenv.load_dotenv()
 

@@ -1,16 +1,18 @@
 import sys
 import os
+import dotenv
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
-import os
+ENV_PATH = os.path.join(PROJECT_ROOT, "app", ".env")
+dotenv.load_dotenv(ENV_PATH)
+
 import numpy as np
 import faiss
 from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
 import boto3
-import dotenv
 from app.core.config import DATA_DIR
 
 dotenv.load_dotenv()
@@ -26,7 +28,8 @@ LOCAL_INDEX = f"{DATA_DIR}/jobs.index"
 
 MODEL_NAME = "BAAI/bge-large-en-v1.5"
 # ----------------------------------------
-
+print("MONGO_URI =", MONGO_URI)
+print("AWS_BUCKET_NAME =", BUCKET)
 
 def build_job_text(job):
     return f"""

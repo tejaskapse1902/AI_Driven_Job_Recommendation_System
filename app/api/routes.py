@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from app.services.resume_parser import parse_resume_file
 from app.services.recommender import recommend_jobs
 from app.services.s3_service import upload_to_s3, list_resumes, delete_resume
+from app.services.index_manager import reload_index_and_jobs
 import os
 import tempfile
 
@@ -30,6 +31,7 @@ async def recommend(file: UploadFile = File(...)):
 
         return {
         "filename": file.filename,
+        "s3_key": s3_key,
         "recommendations": results
         }
     finally:
@@ -44,3 +46,9 @@ def get_all_resumes():
 def delete_resume_api(req: DeleteRequest):
     delete_resume(req.key)
     return {"status": "deleted"}
+
+
+@router.post("/admin/reload-index")
+def reload_index():
+    reload_index_and_jobs()
+    return {"status": "reloaded"}
