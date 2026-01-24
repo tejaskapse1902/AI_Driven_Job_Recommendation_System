@@ -17,3 +17,5 @@ pydantic
 dotenv
 pandas
 pymongo
+python-dotenv
+numpy
