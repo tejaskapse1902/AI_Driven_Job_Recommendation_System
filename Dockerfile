@@ -1,29 +1,30 @@
 FROM python:3.10-slim
 
-# System deps for FAISS & NLP
+# Install minimal system deps
 RUN apt-get update && apt-get install -y \
-    build-essential \
+    gcc \
+    g++ \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements first (for caching)
+# Copy only requirements first
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install dependencies without cache
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Download spaCy model
 RUN python -m spacy download en_core_web_sm
 
-# Copy project files
+# Copy project
 COPY . .
 
-# Expose port
+# Remove pip cache just in case
+RUN rm -rf /root/.cache
+
 EXPOSE 8000
 
-# Start backend
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
