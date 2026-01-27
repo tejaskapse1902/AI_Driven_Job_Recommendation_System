@@ -65,6 +65,7 @@ def initialize_index():
     _last_modified = get_s3_last_modified()
 
     print("✅ FAISS index + jobs loaded")
+    print(f"   - Jobs indexed: {_jobs_df.shape[0]}")
 
 
 def get_index():
@@ -90,6 +91,7 @@ def reload_index_and_jobs():
         _last_modified = get_s3_last_modified()
 
         print("✅ Reload complete")
+        print(f"   - Jobs indexed: {_jobs_df.shape[0]}")
 
 
 def check_and_reload():

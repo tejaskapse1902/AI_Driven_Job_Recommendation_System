@@ -28,8 +28,6 @@ LOCAL_INDEX = f"{DATA_DIR}/jobs.index"
 
 MODEL_NAME = "BAAI/bge-large-en-v1.5"
 # ----------------------------------------
-print("MONGO_URI =", MONGO_URI)
-print("AWS_BUCKET_NAME =", BUCKET)
 
 def build_job_text(job):
     return f"""

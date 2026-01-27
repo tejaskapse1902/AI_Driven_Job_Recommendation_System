@@ -28,10 +28,12 @@ async def recommend(file: UploadFile = File(...)):
         resume_text = parse_resume_file(file)
         results = recommend_jobs(resume_text)
 
+        
 
         return {
         "filename": file.filename,
         "s3_key": s3_key,
+        "no. of recommendations": len(results),
         "recommendations": results
         }
     finally:
