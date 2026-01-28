@@ -12,3 +12,8 @@ test.csv
 notebooks/
 hf_cache/
 .cache/
+hf_cache
+.cache
+__pycache__
+*.safetensors
+*.bin

@@ -1,29 +1,25 @@
 FROM python:3.10-slim
 
-# Install minimal system deps
+ENV HF_HOME=/tmp/hf_cache
+ENV TRANSFORMERS_CACHE=/tmp/hf_cache
+ENV PIP_NO_CACHE_DIR=1
+
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    git \
-    curl \
+    gcc g++ git curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy only requirements first
 COPY requirements.txt .
 
-# Install dependencies without cache
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy model
 RUN python -m spacy download en_core_web_sm
 
-# Copy project
 COPY . .
 
-# Remove pip cache just in case
-RUN rm -rf /root/.cache
+# Remove build-time caches
+RUN rm -rf /root/.cache /tmp/hf_cache
 
 EXPOSE 8000
 

@@ -1,7 +1,10 @@
-fastapi
-uvicorn
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.0.1+cpu
 sentence-transformers
 faiss-cpu
+fastapi
+uvicorn
 pymongo
 boto3
 python-dotenv

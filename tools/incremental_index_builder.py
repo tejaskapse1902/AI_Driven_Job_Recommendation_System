@@ -8,6 +8,10 @@ sys.path.insert(0, PROJECT_ROOT)
 ENV_PATH = os.path.join(PROJECT_ROOT, "app", ".env")
 dotenv.load_dotenv(ENV_PATH)
 
+import os
+os.environ["HF_HOME"] = "/tmp/hf_cache"
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
+
 import numpy as np
 import faiss
 from pymongo import MongoClient
