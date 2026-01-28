@@ -1,3 +1,6 @@
+import os
+os.environ["HF_HOME"] = "./hf_cache"
+os.environ["TRANSFORMERS_CACHE"] = "./hf_cache"
 from operator import index
 import numpy as np
 import pandas as pd

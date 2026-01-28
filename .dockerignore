@@ -10,3 +10,5 @@ uploads/
 jobs.csv
 test.csv
 notebooks/
+hf_cache/
+.cache/
