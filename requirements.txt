@@ -1,7 +1,8 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 torch==2.0.1+cpu
-sentence-transformers
+sentence-transformers==2.6.1
+transformers==4.38.2
 faiss-cpu
 fastapi
 uvicorn
@@ -15,3 +16,4 @@ numpy
 tqdm
 phonenumbers
 pandas
+python-multipart

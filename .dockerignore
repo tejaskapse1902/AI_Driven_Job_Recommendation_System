@@ -17,3 +17,4 @@ hf_cache
 __pycache__
 *.safetensors
 *.bin
+node_modules
