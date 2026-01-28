@@ -1,3 +1,4 @@
+from operator import index
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
@@ -7,7 +8,7 @@ from datetime import datetime, timezone
 import re
 
 # ---------- Load model once ----------
-model = SentenceTransformer("BAAI/bge-large-en-v1.5")
+model = SentenceTransformer("BAAI/bge-base-en-v1.5")
 
 TOP_K = 50
 
@@ -94,6 +95,7 @@ def recommend_jobs(resume_text: str):
 
     emb = model.encode([resume_text], normalize_embeddings=True)
     scores, indices = index.search(np.array(emb), TOP_K)
+
 
     ranked = []
     for rank, idx in enumerate(indices[0]):

@@ -26,7 +26,7 @@ BUCKET = os.getenv("AWS_BUCKET_NAME")
 S3_KEY = "faiss/jobs.index"
 LOCAL_INDEX = f"{DATA_DIR}/jobs.index"
 
-MODEL_NAME = "BAAI/bge-large-en-v1.5"
+MODEL_NAME = "BAAI/bge-base-en-v1.5"
 # ----------------------------------------
 
 def build_job_text(job):

@@ -22,7 +22,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "job_recommendation"
 COLLECTION_NAME = "jobs"
 OUTPUT_INDEX = f"{DATA_DIR}/jobs.index"
-MODEL_NAME = "BAAI/bge-large-en-v1.5"
+MODEL_NAME = "BAAI/bge-base-en-v1.5"
 # ==================
 
 def build_job_text(row):
