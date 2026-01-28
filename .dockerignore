@@ -5,7 +5,7 @@ __pycache__
 *.pyo
 *.pyd
 .env
-data/
+/app/.env
 uploads/
 jobs.csv
 test.csv
