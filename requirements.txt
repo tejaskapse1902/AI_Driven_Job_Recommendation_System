@@ -1,19 +1,23 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 numpy==1.26.4
-torch==2.0.1+cpu
+
+torch==2.0.1
 sentence-transformers==2.6.1
 transformers==4.38.2
-faiss-cpu
+
+faiss-cpu==1.7.4
+
 fastapi
 uvicorn
 pymongo
 boto3
 python-dotenv
-spacy
+
+spacy==3.7.2
 pypdf
 python-docx
-numpy
+
 tqdm
 phonenumbers
 pandas

@@ -3,6 +3,7 @@ FROM python:3.10-slim
 ENV HF_HOME=/tmp/hf_cache
 ENV TRANSFORMERS_CACHE=/tmp/hf_cache
 ENV PIP_NO_CACHE_DIR=1
+ENV TOKENIZERS_PARALLELISM=false
 
 RUN apt-get update && apt-get install -y \
     gcc g++ git curl \

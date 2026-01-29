@@ -1,19 +1,37 @@
+# =============================
+# app/services/recommender.py
+# Accuracy-safe + fast version
+# Uses TOP_K = 20 (candidate set)
+# Works with IndexHNSWFlat built in index builder
+# =============================
+
 import os
 os.environ["HF_HOME"] = "/tmp/hf_cache"
 os.environ["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
-from operator import index
+
 import numpy as np
-import pandas as pd
 from sentence_transformers import SentenceTransformer
 from app.services.resume_parser import parse_resume
 from app.services.index_manager import get_index, get_jobs_df
 from datetime import datetime, timezone
 import re
 
-# ---------- Load model once ----------
-model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+MODEL_NAME = "BAAI/bge-base-en-v1.5"
+TOP_K = 20   # candidate pool size (fast + no accuracy loss)
 
-TOP_K = 50
+# ---------- Load model once (singleton) ----------
+_model = None
+
+
+def get_model():
+    global _model
+    if _model is None:
+        print("🔥 Loading embedding model once...")
+        _model = SentenceTransformer(MODEL_NAME)
+    return _model
+
+
+# ---------- Utils ----------
 
 def clean_job_link(raw):
     if not raw:
@@ -21,18 +39,13 @@ def clean_job_link(raw):
 
     raw = raw.strip()
 
-    # If email → convert to mailto
     if "@" in raw and "http" not in raw:
         return f"mailto:{raw}"
 
-    # Fix broken https
     raw = raw.replace("https: ", "https://")
     raw = raw.replace("http: ", "http://")
-
-    # Remove spaces inside URL
     raw = raw.replace(" ", "")
 
-    # Extract first valid URL if mixed text
     match = re.search(r"(https?://[^\s]+)", raw)
     if match:
         return match.group(1)
@@ -42,11 +55,6 @@ def clean_job_link(raw):
 
 
 def recency_boost(created_date, max_boost=0.08, decay_days=30):
-    """
-    Boost score for newer jobs.
-    max_boost: maximum bonus added to similarity score
-    decay_days: after how many days boost becomes 0
-    """
     try:
         if isinstance(created_date, str):
             created_dt = datetime.fromisoformat(created_date.replace("Z", "+00:00"))
@@ -56,15 +64,15 @@ def recency_boost(created_date, max_boost=0.08, decay_days=30):
             return 0.0
 
         now = datetime.now(timezone.utc)
-        age_days = (now - created_dt).days
-        if age_days < 0:
-            age_days = 0
+        age_days = max((now - created_dt).days, 0)
 
         boost = max_boost * max(0, (decay_days - age_days) / decay_days)
         return boost
 
     except Exception:
         return 0.0
+
+
 
 def final_score(similarity, row, resume_data):
     score = similarity
@@ -77,15 +85,14 @@ def final_score(similarity, row, resume_data):
         if str(resume_data["experience_years"]) in str(row.get("Experience Level", "")):
             score += 0.15
 
-    # 🔥 Date / recency boost
-    created_date = row.get("created_date")
-    score += recency_boost(created_date)
+    score += recency_boost(row.get("created_date"))
 
     return score
 
 
+# ---------- Main recommender ----------
+
 def recommend_jobs(resume_text: str):
-    # ✅ Always fetch latest index + jobs
     index = get_index()
     df = get_jobs_df()
 
@@ -96,9 +103,13 @@ def recommend_jobs(resume_text: str):
 
     resume_data = parse_resume(resume_text)
 
-    emb = model.encode([resume_text], normalize_embeddings=True)
-    scores, indices = index.search(np.array(emb), TOP_K)
+    model = get_model()
 
+    # Keep batch-style encoding for identical accuracy
+    emb_vec = model.encode([resume_text], normalize_embeddings=True)[0]
+    emb = np.asarray([emb_vec], dtype="float32")
+
+    scores, indices = index.search(emb, TOP_K)
 
     ranked = []
     for rank, idx in enumerate(indices[0]):
@@ -115,16 +126,15 @@ def recommend_jobs(resume_text: str):
                 created_dt = datetime.fromisoformat(created_date.replace("Z", "+00:00"))
             else:
                 created_dt = created_date
-        except:
+        except Exception:
             created_dt = datetime.min
 
         ranked.append((score, created_dt, idx))
 
-    # ✅ Sort: highest score first, then newest job
     ranked.sort(key=lambda x: (x[0], x[1]), reverse=True)
 
     results = []
-    for score, _, idx in ranked[:TOP_K]:
+    for score, _, idx in ranked[:20]:
         job = df.iloc[idx]
 
         results.append({

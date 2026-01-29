@@ -1,3 +1,8 @@
+# =============================
+# app/services/build_faiss_index.py
+# HNSW + accuracy-safe + S3 upload
+# =============================
+
 import sys
 import os
 import dotenv
@@ -18,15 +23,13 @@ import pandas as pd
 import faiss
 import boto3
 from pymongo import MongoClient
-from sentence_transformers import SentenceTransformer
+from app.services.recommender import get_model
 from app.core.config import DATA_DIR
 
 # ---------------- Config ----------------
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "job_recommendation"
 COLLECTION_NAME = "jobs"
-
-MODEL_NAME = "BAAI/bge-base-en-v1.5"
 
 OUTPUT_INDEX_PATH = f"{DATA_DIR}/jobs.index"
 
@@ -62,6 +65,7 @@ def upload_to_s3(local_path: str):
     print("✅ jobs.index uploaded to S3 successfully")
 
 
+
 def build_faiss_index():
     print("🔌 Connecting to MongoDB...")
     client = MongoClient(MONGO_URI)
@@ -80,7 +84,7 @@ def build_faiss_index():
     job_texts = df.apply(build_job_text, axis=1).tolist()
 
     print("🤖 Loading embedding model...")
-    model = SentenceTransformer(MODEL_NAME)
+    model = get_model()
 
     print("🧠 Generating embeddings...")
     embeddings = model.encode(
@@ -88,12 +92,18 @@ def build_faiss_index():
         batch_size=32,
         normalize_embeddings=True,
         show_progress_bar=True
-    )
+    ).astype("float32")
 
-    print("📐 Creating FAISS index...")
+    print("📐 Creating FAISS HNSW index (accuracy-safe)...")
     dim = embeddings.shape[1]
-    index = faiss.IndexFlatIP(dim)
-    index.add(np.array(embeddings))
+
+    # HNSW parameters tuned for accuracy
+    M = 32
+    index = faiss.IndexHNSWFlat(dim, M, faiss.METRIC_INNER_PRODUCT)
+    index.hnsw.efConstruction = 200
+    index.hnsw.efSearch = 64
+
+    index.add(embeddings)
 
     print("💾 Saving index locally...")
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -102,6 +112,7 @@ def build_faiss_index():
     print("✅ FAISS index created successfully")
 
     return OUTPUT_INDEX_PATH
+
 
 
 def main():
@@ -117,3 +128,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

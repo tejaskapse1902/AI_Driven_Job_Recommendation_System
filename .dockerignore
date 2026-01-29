@@ -18,3 +18,4 @@ __pycache__
 *.safetensors
 *.bin
 node_modules
+/venv/
