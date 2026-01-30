@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.api.routes import router
 from app.services.index_manager import initialize_index, start_auto_refresh
 from fastapi.middleware.cors import CORSMiddleware
+from app.services.recommender import get_model
 
 app = FastAPI(title="Job Recommendation API")
 
@@ -18,5 +19,10 @@ app.include_router(router)
 
 @app.on_event("startup")
 def startup_event():
+    get_model()
     initialize_index()
     start_auto_refresh(900)   # 15 minutes
+    
+@app.get("/")
+def health():
+    return {"status": "ok"}
