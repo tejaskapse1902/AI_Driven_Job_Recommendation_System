@@ -16,7 +16,7 @@ from app.services.index_manager import get_index, get_jobs_df
 from datetime import datetime, timezone
 import re
 
-MODEL_NAME = "BAAI/bge-base-en-v1.5"
+MODEL_NAME = "BAAI/bge-small-en-v1.5"
 TOP_K = 20   # candidate pool size (fast + no accuracy loss)
 
 # ---------- Load model once (singleton) ----------
