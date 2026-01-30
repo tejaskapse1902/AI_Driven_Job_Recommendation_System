@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
+import app.core.state as state
 from pydantic import BaseModel
 from app.services.resume_parser import parse_resume_file
 from app.services.recommender import recommend_jobs
@@ -9,13 +10,16 @@ import tempfile
 
 router = APIRouter()
 
-
 class DeleteRequest(BaseModel):
     key: str
     
-
 @router.post("/recommend")
 async def recommend(file: UploadFile = File(...)):
+    if not state.READY:
+        raise HTTPException(
+            status_code=503,
+            detail="System warming up. Please retry in a few seconds."
+        )
     
     suffix = os.path.splitext(file.filename)[1]
 
@@ -27,9 +31,7 @@ async def recommend(file: UploadFile = File(...)):
         s3_key = upload_to_s3(tmp_path, file.filename)
         resume_text = parse_resume_file(file)
         results = recommend_jobs(resume_text)
-
-        
-
+     
         return {
         "filename": file.filename,
         "s3_key": s3_key,

@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from app.api.routes import router
-from app.services.index_manager import initialize_index, start_auto_refresh
+from app.core.startup import start_background_loading
+import app.core.state as state
 from fastapi.middleware.cors import CORSMiddleware
-from app.services.recommender import get_model
 
-app = FastAPI(title="Job Recommendation API")
+app = FastAPI()
 
 app.add_middleware(
 CORSMiddleware,
@@ -19,10 +19,13 @@ app.include_router(router)
 
 @app.on_event("startup")
 def startup_event():
-    get_model()
-    initialize_index()
-    start_auto_refresh(900)   # 15 minutes
-    
+    # 🔥 non-blocking startup
+    start_background_loading()
+
+
 @app.get("/")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "ready": state.READY
+    }

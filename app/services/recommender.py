@@ -15,21 +15,9 @@ from app.services.resume_parser import parse_resume
 from app.services.index_manager import get_index, get_jobs_df
 from datetime import datetime, timezone
 import re
+import app.core.startup as startup
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
 TOP_K = 20   # candidate pool size (fast + no accuracy loss)
-
-# ---------- Load model once (singleton) ----------
-_model = None
-
-
-def get_model():
-    global _model
-    if _model is None:
-        print("🔥 Loading embedding model once...")
-        _model = SentenceTransformer(MODEL_NAME)
-    return _model
-
 
 # ---------- Utils ----------
 
@@ -93,6 +81,12 @@ def final_score(similarity, row, resume_data):
 # ---------- Main recommender ----------
 
 def recommend_jobs(resume_text: str):
+    
+    model = startup.model
+    
+    if model is None:
+        raise RuntimeError("Model not loaded yet")
+    
     index = get_index()
     df = get_jobs_df()
 
@@ -102,8 +96,6 @@ def recommend_jobs(resume_text: str):
         }
 
     resume_data = parse_resume(resume_text)
-
-    model = get_model()
 
     # Keep batch-style encoding for identical accuracy
     emb_vec = model.encode([resume_text], normalize_embeddings=True)[0]
