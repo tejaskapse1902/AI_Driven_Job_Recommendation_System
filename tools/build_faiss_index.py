@@ -23,7 +23,7 @@ import pandas as pd
 import faiss
 import boto3
 from pymongo import MongoClient
-from app.services.recommender import get_model
+from app.core.startup import get_model
 from app.core.config import DATA_DIR
 
 # ---------------- Config ----------------
