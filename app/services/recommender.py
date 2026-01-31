@@ -1,38 +1,51 @@
 # =============================
 # app/services/recommender.py
-# Accuracy-safe + fast version
-# Uses TOP_K = 20 (candidate set)
-# Works with IndexHNSWFlat built in index builder
+# Production-safe + optimized
 # =============================
 
-# import os
-# os.environ["HF_HOME"] = "/tmp/hf_cache"
-# os.environ["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
-
+import os
+import re
 import numpy as np
+from datetime import datetime, timezone
 from sentence_transformers import SentenceTransformer
+
 from app.services.resume_parser import parse_resume
 from app.services.index_manager import get_index, get_jobs_df
-from datetime import datetime, timezone
-import re
 
+# -----------------------------
+# HuggingFace cache config
+# -----------------------------
+CACHE_DIR = "/app/hf_cache"
+os.environ["HF_HOME"] = CACHE_DIR
+os.environ["TRANSFORMERS_CACHE"] = CACHE_DIR
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# -----------------------------
+# Model config
+# -----------------------------
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
-TOP_K = 20   # candidate pool size (fast + no accuracy loss)
+TOP_K = 20
 
-# ---------- Load model once (singleton) ----------
+# -----------------------------
+# Load model once (singleton)
+# -----------------------------
 _model = None
 
 
 def get_model():
     global _model
     if _model is None:
-        print("🔥 Loading embedding model once...")
-        _model = SentenceTransformer(MODEL_NAME)
+        print("🔥 Loading embedding model at runtime...")
+        _model = SentenceTransformer(
+            MODEL_NAME,
+            cache_folder=CACHE_DIR
+        )
     return _model
 
 
-# ---------- Utils ----------
-
+# -----------------------------
+# Utils
+# -----------------------------
 def clean_job_link(raw):
     if not raw:
         return ""
@@ -47,11 +60,7 @@ def clean_job_link(raw):
     raw = raw.replace(" ", "")
 
     match = re.search(r"(https?://[^\s]+)", raw)
-    if match:
-        return match.group(1)
-
-    return raw
-
+    return match.group(1) if match else raw
 
 
 def recency_boost(created_date, max_boost=0.08, decay_days=30):
@@ -65,13 +74,10 @@ def recency_boost(created_date, max_boost=0.08, decay_days=30):
 
         now = datetime.now(timezone.utc)
         age_days = max((now - created_dt).days, 0)
-
-        boost = max_boost * max(0, (decay_days - age_days) / decay_days)
-        return boost
+        return max_boost * max(0, (decay_days - age_days) / decay_days)
 
     except Exception:
         return 0.0
-
 
 
 def final_score(similarity, row, resume_data):
@@ -86,29 +92,30 @@ def final_score(similarity, row, resume_data):
             score += 0.15
 
     score += recency_boost(row.get("created_date"))
-
     return score
 
 
-# ---------- Main recommender ----------
-
+# -----------------------------
+# Main recommender
+# -----------------------------
 def recommend_jobs(resume_text: str):
     index = get_index()
     df = get_jobs_df()
 
     if index is None or df is None or df.empty:
         return {
-            "error": "Recommendation system is warming up. Please try again in a few seconds."
+            "error": "Recommendation system is warming up. Please try again shortly."
         }
 
     resume_data = parse_resume(resume_text)
-
     model = get_model()
 
-    # Keep batch-style encoding for identical accuracy
-    emb_vec = model.encode([resume_text], normalize_embeddings=True)[0]
-    emb = np.asarray([emb_vec], dtype="float32")
+    emb_vec = model.encode(
+        [resume_text],
+        normalize_embeddings=True
+    )[0]
 
+    emb = np.asarray([emb_vec], dtype="float32")
     scores, indices = index.search(emb, TOP_K)
 
     ranked = []
@@ -134,7 +141,7 @@ def recommend_jobs(resume_text: str):
     ranked.sort(key=lambda x: (x[0], x[1]), reverse=True)
 
     results = []
-    for score, _, idx in ranked[:20]:
+    for score, _, idx in ranked[:TOP_K]:
         job = df.iloc[idx]
 
         results.append({
