@@ -8,14 +8,20 @@ from pymongo import MongoClient
 from app.core.config import DATA_DIR
 import dotenv
 
-dotenv.load_dotenv()
+# Load environment variables with fallback
+if not dotenv.load_dotenv():
+    dotenv.load_dotenv("app/.env")
+
 
 # ---------------- CONFIG ----------------
 BUCKET = os.getenv("AWS_BUCKET_NAME")
 S3_KEY = "faiss/jobs.index"
 LOCAL_INDEX = f"{DATA_DIR}/jobs.index"
 
+# Add a check to fail gracefully or log clearly
 MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    print("⚠️ WARNING: MONGO_URI not found. Check your environment variables or .env file.")
 DB_NAME = "job_recommendation"
 COLLECTION = "jobs"
 # ----------------------------------------

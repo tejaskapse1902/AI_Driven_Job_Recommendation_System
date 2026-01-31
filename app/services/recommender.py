@@ -5,9 +5,9 @@
 # Works with IndexHNSWFlat built in index builder
 # =============================
 
-import os
-os.environ["HF_HOME"] = "/tmp/hf_cache"
-os.environ["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
+# import os
+# os.environ["HF_HOME"] = "/tmp/hf_cache"
+# os.environ["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
 
 import numpy as np
 from sentence_transformers import SentenceTransformer

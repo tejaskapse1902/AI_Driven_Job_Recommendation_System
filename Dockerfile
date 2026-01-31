@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 
+# Add this before COPY . . in your Dockerfile
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
+
 COPY . .
 
 # Remove build-time caches
@@ -24,4 +27,5 @@ RUN rm -rf /root/.cache /tmp/hf_cache
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# Update the CMD in Dockerfile for production readiness
+CMD ["sh", "-c", "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 120"]

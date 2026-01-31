@@ -3,7 +3,9 @@ import os
 from uuid import uuid4
 import dotenv
 
-dotenv.load_dotenv()
+# Load environment variables with fallback
+if not dotenv.load_dotenv():
+    dotenv.load_dotenv("app/.env")
 
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
