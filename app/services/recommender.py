@@ -23,7 +23,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 # -----------------------------
 # Model config
 # -----------------------------
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+MODEL_NAME = "BAAI/bge-base-en-v1.5"
 TOP_K = 20
 
 # -----------------------------

@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from app.core.config import DATA_DIR
 import dotenv
 
+dotenv.load_dotenv()
 # Load environment variables with fallback
 if not dotenv.load_dotenv():
     dotenv.load_dotenv("app/.env")

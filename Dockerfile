@@ -1,32 +1,54 @@
 FROM python:3.10-slim
 
+# ------------------------
+# Python runtime settings
+# ------------------------
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 ENV HF_HOME=/app/hf_cache
-ENV TRANSFORMERS_CACHE=/app/hf_cache
-ENV PIP_NO_CACHE_DIR=1
 ENV TOKENIZERS_PARALLELISM=false
 
+# ------------------------
+# System dependencies
+# ------------------------
 RUN apt-get update && apt-get install -y \
-    gcc g++ git curl \
+    gcc g++ curl \
     && rm -rf /var/lib/apt/lists/*
 
+# ------------------------
+# Working directory
+# ------------------------
 WORKDIR /app
 
+# ------------------------
+# Python dependencies
+# ------------------------
 COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
+# ------------------------
+# spaCy language model
+# ------------------------
+RUN pip install \
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
-
-# Create cache directory and pre-download the embedding model
-# RUN mkdir -p /app/hf_cache && \
-#     python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
-
+# ------------------------
+# Application code
+# ------------------------
 COPY . .
 
-# Remove build-time system caches, but KEEP /app/hf_cache
+# ------------------------
+# Cleanup
+# ------------------------
 RUN rm -rf /root/.cache
 
+# ------------------------
+# Port
+# ------------------------
 EXPOSE 8000
 
-# Update the CMD in Dockerfile for production readiness
-CMD ["sh", "-c", "gunicorn app.main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 120"]
+# ------------------------
+# Start server
+# ------------------------
+CMD [ "gunicorn", "app.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "120" ]
