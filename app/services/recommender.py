@@ -6,6 +6,7 @@
 import os
 import re
 import numpy as np
+import torch
 from datetime import datetime, timezone
 from sentence_transformers import SentenceTransformer
 
@@ -23,7 +24,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 # -----------------------------
 # Model config
 # -----------------------------
-MODEL_NAME = "BAAI/bge-base-en-v1.5"
+MODEL_NAME = "BAAI/bge-small-en-v1.5"
 TOP_K = 20
 
 # -----------------------------
@@ -40,6 +41,9 @@ def get_model():
             MODEL_NAME,
             cache_folder=CACHE_DIR
         )
+        # Performance optimization for CPU
+        if not torch.cuda.is_available():
+            torch.set_num_threads(4) 
     return _model
 
 
